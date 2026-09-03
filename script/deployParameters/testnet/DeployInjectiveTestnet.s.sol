@@ -41,10 +41,10 @@ contract DeployInjectiveTestnet is DeployUniversalRouter {
             v3InitCodeHash: BYTES32_ZERO,
             stableFactory: UNSUPPORTED_PROTOCOL,
             stableInfo: UNSUPPORTED_PROTOCOL,
-            // filled from contracts/deployments/injective_testnet.json after core M1 step 1
-            infiVault: address(0),
-            infiClPoolManager: address(0),
-            infiBinPoolManager: address(0)
+            // from contracts/deployments/injective_testnet.json, core M1 step 1
+            infiVault: 0x17BDb95424cA07c31C23ecA9925CBA10818CBF6e,
+            infiClPoolManager: 0x0d93E2E86e308F54eFca3f225487382cECF57F37,
+            infiBinPoolManager: 0x88Af37259DB7775B4625449AeEa11Fc682452143
         });
 
         // no UnsupportedProtocol on Injective yet; run() deploys one when this is address(0)
