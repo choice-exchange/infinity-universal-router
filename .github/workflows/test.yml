@@ -3,8 +3,30 @@ name: Tests
 on:
   push:
     branches:
-      - main
+      - injective
+    paths:
+      # INJECTIVE FORK: our diff is deploy config only, so the upstream suite runs
+      # only when protocol code, tests, deps or the upstream pin actually move.
+      # Keeps the org inside its Actions-minute budget (see plan, "Actions budget").
+      - 'src/**'
+      - 'test/**'
+      - 'lib/**'
+      - 'foundry.toml'
+      - 'remappings.txt'
+      - '.injective-fork-base'
+      - '.github/workflows/test.yml'
   pull_request:
+    paths:
+      # INJECTIVE FORK: our diff is deploy config only, so the upstream suite runs
+      # only when protocol code, tests, deps or the upstream pin actually move.
+      # Keeps the org inside its Actions-minute budget (see plan, "Actions budget").
+      - 'src/**'
+      - 'test/**'
+      - 'lib/**'
+      - 'foundry.toml'
+      - 'remappings.txt'
+      - '.injective-fork-base'
+      - '.github/workflows/test.yml'
 
 jobs:
   forge-tests:
@@ -21,8 +43,18 @@ jobs:
         with:
           version: stable
 
+      # INJECTIVE FORK: test/{v2,v3,stableSwap} fork BSC mainnet to exercise the legacy
+      # PancakeSwap v2 / v3 / StableSwap command branches. None of those venues exist on
+      # Injective and our RouterParameters wire them to UnsupportedProtocol, so those
+      # suites are skipped unless a BSC archive RPC is configured as the FORK_URL secret.
       - name: Run tests
-        run: forge test -vvv --isolate
+        run: |
+          if [ -n "$FORK_URL" ]; then
+            forge test -vvv --isolate
+          else
+            echo "FORK_URL unset - skipping the BSC-fork suites (legacy venues, unused on Injective)"
+            forge test -vvv --isolate --no-match-path 'test/{v2,v3,stableSwap}/*'
+          fi
         env:
           FOUNDRY_PROFILE: ci
           FORK_URL: ${{ secrets.FORK_URL }}
