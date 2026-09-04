@@ -28,11 +28,11 @@ abstract contract DeployUniversalRouter is Script {
 
     function run() external returns (address router) {
         /// @dev address from https://github.com/pancakeswap/pancake-create3-factory
-        /// @dev INJECTIVE FORK: PancakeSwap's create3 factory is NOT deployed on Injective
-        /// (chain 1439 / 1776), so the factory address is read from CREATE3_FACTORY and falls
-        /// back to the upstream address when that env var is unset.
-        Create3Factory factory =
-            Create3Factory(vm.envOr("CREATE3_FACTORY", 0x38Ab3f2CE00973A51d3A2A04d634C9bcbf20e4e1));
+        /// @dev INJECTIVE FORK - modified by Choice Exchange on 2026-09-04. PancakeSwap's
+        /// create3 factory is NOT deployed on Injective (chain 1439 / 1776), so the factory
+        /// address is read from CREATE3_FACTORY and falls back to the upstream address when
+        /// that env var is unset.
+        Create3Factory factory = Create3Factory(vm.envOr("CREATE3_FACTORY", 0x38Ab3f2CE00973A51d3A2A04d634C9bcbf20e4e1));
 
         // deployer will the the initial owner of universal router
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");

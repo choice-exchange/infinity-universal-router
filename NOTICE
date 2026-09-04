@@ -1,0 +1,30 @@
+infinity-universal-router — Choice Exchange's Injective fork
+Fork of https://github.com/pancakeswap/infinity-universal-router
+
+How this repository is licensed
+-------------------------------
+
+Upstream ships NO repository-level licence file, so there is no single licence to inherit and
+Choice cannot grant one over PancakeSwap's code. **Each file's SPDX header governs that file.**
+Upstream's mix, unchanged here:
+
+  GPL-2.0-or-later    the protocol source, including src/UniversalRouter.sol
+                      Copyright (C) 2024 PancakeSwap
+  GPL-3.0-or-later    parts of src/modules/
+  MIT                 parts of src/ and the libraries
+  UNLICENSED          upstream's own deploy scripts under script/
+
+Because GPL-3.0-or-later files are present, a combined work built from this repository is
+conveyed under GPL-3.0-or-later. Choice's own contracts do not import anything from here -
+`choice_v2_contracts` imports only infinity-core and infinity-periphery, both
+GPL-2.0-or-later - so that combination does not arise there. What Choice deploys from this
+repository is upstream's UniversalRouter, unmodified.
+
+Choice's changes
+----------------
+
+Listed in full, with dates, in INJECTIVE_FORK.md. Nothing under `src/` is touched; the one
+edited upstream file carries a dated notice inline. Choice's single added Solidity file,
+`script/deployParameters/testnet/DeployInjectiveTestnet.s.sol`, is GPL-2.0-or-later,
+Copyright (C) 2026 Choice Exchange - deliberately licensed rather than left UNLICENSED like
+upstream's sibling scripts.
