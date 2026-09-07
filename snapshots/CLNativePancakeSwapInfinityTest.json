@@ -1,5 +1,5 @@
 {
-  "test_infiClSwap_ExactInSingle_NativeIn": "162274",
-  "test_infiClSwap_ExactInSingle_NativeOut": "145091",
-  "test_infiClSwap_infiInitializeClPool": "133610"
+  "test_infiClSwap_ExactInSingle_NativeIn": "130917",
+  "test_infiClSwap_ExactInSingle_NativeOut": "140746",
+  "test_infiClSwap_infiInitializeClPool": "105642"
 }

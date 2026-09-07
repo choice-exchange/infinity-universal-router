@@ -40,18 +40,27 @@ contract DeployInjectiveTestnet is DeployUniversalRouter {
     /// is already there and reverts. There is no env override, deliberately - the address a
     /// deployment lands on should be a reviewed line in a diff, not an environment variable.
     ///
-    /// **1.1.0 exists because 1.0.0 carries a known bug in every ordinary user swap.** It was
-    /// built from infinity-periphery 9be2647, before upstream's `9b026be` ("Fix: exact output
-    /// partial fills", PR #96). `CLRouterBase` is reached by UniversalRouter -> Dispatcher ->
-    /// InfinitySwapRouter -> InfinityRouter -> CLRouterBase, and before that fix an exactOutput
-    /// swap never checked the pool delivered what was asked: a CL pool that ran out of liquidity
-    /// before the price limit filled PARTIALLY, and the only guard - `amountIn > amountInMaximum`
-    /// - passed precisely BECAUSE less was delivered. Partial fills on exact output need thin
+    /// **1.2.0 is the first salt whose bytecode actually differs.** `CLRouterBase` is reached by
+    /// UniversalRouter -> Dispatcher -> InfinitySwapRouter -> InfinityRouter -> CLRouterBase, and
+    /// before upstream's `9b026be` ("Fix: exact output partial fills", PR #96) an exactOutput swap
+    /// never checked the pool delivered what was asked: a CL pool that ran out of liquidity before
+    /// the price limit filled PARTIALLY, and the only guard - `amountIn > amountInMaximum` -
+    /// passed precisely BECAUSE less was delivered. Partial fills on exact output need thin
     /// liquidity, which is what a newly deployed DEX has.
+    ///
+    /// ⛔ **1.1.0 IS BURNT, AND IT IS THE WHOLE LESSON. DO NOT REUSE IT.** It was deployed to 1439
+    /// on 2026-09-07 at 0xdfa954e35851D71c3c6a4D6c35ACF957bE4CE88f and came out BYTE-IDENTICAL to
+    /// the router it was replacing - same codehash, 0x8b9d173f... - because moving the periphery
+    /// pin in `choice_v2_contracts` does not move THIS REPO'S OWN `lib/infinity-periphery`
+    /// submodule, which is what `remappings.txt` resolves `infinity-periphery/` to and therefore
+    /// what `CLRouterBase` is actually compiled from. That was a third copy of "which periphery is
+    /// current" and nothing tracked it. It is now pinned to the same commit the address book
+    /// names, so there is one answer instead of two. The 1.1.0 instance was abandoned unowned and
+    /// must never be adopted.
     ///
     /// ⚠️ A new router is a new Permit2 spender. Users must re-approve.
     function getDeploymentSalt() public pure override returns (bytes32) {
-        return keccak256("INFINITY-UNIVERSAL-ROUTER/UniversalRouter/1.1.0");
+        return keccak256("INFINITY-UNIVERSAL-ROUTER/UniversalRouter/1.2.0");
     }
 
     function setUp() public override {
