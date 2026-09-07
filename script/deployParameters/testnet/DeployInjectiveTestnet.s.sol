@@ -9,21 +9,49 @@ import {RouterParameters} from "../../../src/base/RouterImmutables.sol";
  * Injective EVM testnet (chain 1439).
  *
  * Pre-req: CREATE3_FACTORY must be exported (PancakeSwap's factory is not on Injective;
- * see choice_v2 plan D2 - it is deployed from a dedicated nonce-0 EOA).
+ * see choice_v2 plan D2 - it is deployed from a dedicated nonce-0 EOA), and PRIVATE_KEY must
+ * be a deployer WHITELISTED on that factory or `deploy` reverts `NotWhitelisted`.
  *
  * Step 1: Deploy
  * forge script script/deployParameters/testnet/DeployInjectiveTestnet.s.sol:DeployInjectiveTestnet -vvv \
  *     --rpc-url $RPC_URL \
  *     --broadcast \
- *     --slow
+ *     --gas-limit 12000000
  *
- * Never use --resume on Injective: receipts can come back null for a mined tx.
- * Confirm with eth_getCode.
+ * NEVER --slow. This docstring used to say `--slow`, and it contradicted its own next line:
+ * forge waits for a receipt, Injective's testnet node has no hash index to find one by, and the
+ * run is stranded after its first transaction. The same reason rules out --resume. Confirm with
+ * eth_getCode instead, and pass an explicit generous --gas-limit because eth_estimateGas
+ * under-reports on Injective.
+ *
+ * Step 2: `acceptOwnership()` from the deployer. `run()` only *offers* ownership - UniversalRouter
+ * is Ownable2Step, and the offer is made in the factory's afterDeploymentExecutionPayload.
+ *
+ * Step 3: hand it to the timelock - `transferOwnership(timelock)` from the deployer, then
+ * `acceptOwnership()` scheduled and executed BY the timelock. 🔴 Not optional and not cosmetic:
+ * the owner is who can `pause()` the router, the previously deployed one is owned by the
+ * timelock, and a router left owned by the deploy EOA is a hot key that can stop every swap.
  */
 contract DeployInjectiveTestnet is DeployUniversalRouter {
     /// @notice contract address will be based on deployment salt
+    ///
+    /// 🔴 **A CREATE3 salt is an ADDRESS, so redeploying means bumping this.** `Create3Factory`
+    /// derives the address from the salt alone; deploying the same salt twice lands on code that
+    /// is already there and reverts. There is no env override, deliberately - the address a
+    /// deployment lands on should be a reviewed line in a diff, not an environment variable.
+    ///
+    /// **1.1.0 exists because 1.0.0 carries a known bug in every ordinary user swap.** It was
+    /// built from infinity-periphery 9be2647, before upstream's `9b026be` ("Fix: exact output
+    /// partial fills", PR #96). `CLRouterBase` is reached by UniversalRouter -> Dispatcher ->
+    /// InfinitySwapRouter -> InfinityRouter -> CLRouterBase, and before that fix an exactOutput
+    /// swap never checked the pool delivered what was asked: a CL pool that ran out of liquidity
+    /// before the price limit filled PARTIALLY, and the only guard - `amountIn > amountInMaximum`
+    /// - passed precisely BECAUSE less was delivered. Partial fills on exact output need thin
+    /// liquidity, which is what a newly deployed DEX has.
+    ///
+    /// ⚠️ A new router is a new Permit2 spender. Users must re-approve.
     function getDeploymentSalt() public pure override returns (bytes32) {
-        return keccak256("INFINITY-UNIVERSAL-ROUTER/UniversalRouter/1.0.0");
+        return keccak256("INFINITY-UNIVERSAL-ROUTER/UniversalRouter/1.1.0");
     }
 
     function setUp() public override {
@@ -48,7 +76,14 @@ contract DeployInjectiveTestnet is DeployUniversalRouter {
             infiBinPoolManager: 0x88Af37259DB7775B4625449AeEa11Fc682452143
         });
 
-        // no UnsupportedProtocol on Injective yet; run() deploys one when this is address(0)
-        unsupported = address(0);
+        // 🔑 REUSE the UnsupportedProtocol 1.0.0 already deployed on 1439, rather than letting
+        // `run()` mint a second one. It is a codeless-revert stub with no state and no owner, so
+        // a second instance is not wrong - it is just a second address that
+        // `contracts/deployments/injective_testnet.json` and `verify-all.sh` would both have to
+        // learn, for a contract whose only job is to be pointed at. Keeping it makes the new
+        // router's constructor arguments byte-identical to the old one's everywhere except the
+        // code being deployed, which is exactly the diff a reviewer wants to see.
+        // From contracts/deployments/injective_testnet.json: infinity.unsupportedProtocol.
+        unsupported = 0xCB7340356Df545a6DCc10998078F3E0089640E2d;
     }
 }
